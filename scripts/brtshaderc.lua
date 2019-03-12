@@ -3,6 +3,9 @@
 -- License: https://github.com/bkaradzic/bgfx#license-bsd-2-clause
 --
 
+BRTSHADERC_DIR = path.getabsolute("..")
+BGFX_DIR = path.getabsolute(path.join(BRTSHADERC_DIR, "../bgfx"))
+
 local GLSL_OPTIMIZER = path.join(BGFX_DIR, "3rdparty/glsl-optimizer")
 local FCPP_DIR = path.join(BGFX_DIR, "3rdparty/fcpp")
 local GLSLANG = path.join(BGFX_DIR, "3rdparty/glslang")
