@@ -3,6 +3,89 @@
 -- License: https://github.com/bkaradzic/bgfx#license-bsd-2-clause
 --
 
+function filesexist(_srcPath, _dstPath, _files)
+	for _, file in ipairs(_files) do
+		file = path.getrelative(_srcPath, file)
+		local filePath = path.join(_dstPath, file)
+		if not os.isfile(filePath) then return false end
+	end
+
+	return true
+end
+
+function strip()
+
+	configuration { "android-arm", "Release" }
+		postbuildcommands {
+			"$(SILENT) echo Stripping symbols.",
+			"$(SILENT) $(ANDROID_NDK_ARM)/bin/arm-linux-androideabi-strip -s \"$(TARGET)\""
+		}
+
+	configuration { "android-x86", "Release" }
+		postbuildcommands {
+			"$(SILENT) echo Stripping symbols.",
+			"$(SILENT) $(ANDROID_NDK_X86)/bin/i686-linux-android-strip -s \"$(TARGET)\""
+		}
+
+	configuration { "linux-steamlink", "Release" }
+		postbuildcommands {
+			"$(SILENT) echo Stripping symbols.",
+			"$(SILENT) $(MARVELL_SDK_PATH)/toolchain/bin/armv7a-cros-linux-gnueabi-strip -s \"$(TARGET)\""
+		}
+
+	configuration { "linux-* or rpi", "not linux-steamlink", "Release" }
+		postbuildcommands {
+			"$(SILENT) echo Stripping symbols.",
+			"$(SILENT) strip -s \"$(TARGET)\""
+		}
+
+	configuration { "mingw*", "Release" }
+		postbuildcommands {
+			"$(SILENT) echo Stripping symbols.",
+			"$(SILENT) $(MINGW)/bin/strip -s \"$(TARGET)\""
+		}
+
+	configuration { "asmjs" }
+		postbuildcommands {
+			"$(SILENT) echo Running asmjs finalize.",
+			"$(SILENT) \"$(EMSCRIPTEN)/emcc\" -O2 "
+
+--				.. "-s ALLOW_MEMORY_GROWTH=1 "
+--				.. "-s ASSERTIONS=2 "
+--				.. "-s EMTERPRETIFY=1 "
+--				.. "-s EMTERPRETIFY_ASYNC=1 "
+				.. "-s PRECISE_F32=1 "
+				.. "-s TOTAL_MEMORY=268435456 "
+--				.. "-s USE_WEBGL2=1 "
+
+				.. "--memory-init-file 1 "
+				.. "\"$(TARGET)\" -o \"$(TARGET)\".html "
+--				.. "--preload-file ../../../examples/runtime@/ "
+		}
+
+	configuration { "riscv" }
+		postbuildcommands {
+			"$(SILENT) echo Stripping symbols.",
+			"$(SILENT) $(FREEDOM_E_SDK)/work/build/riscv-gnu-toolchain/riscv64-unknown-elf/prefix/bin/riscv64-unknown-elf-strip -s \"$(TARGET)\""
+		}
+
+	configuration {} -- reset configuration
+end
+
+solution "bx"
+	configurations {
+		"Debug",
+		"Release",
+	}
+
+	platforms {
+		"x32",
+		"x64",
+		"Native", -- for targets where bitness is not specified
+	}
+
+	language "C++"
+
 BRTSHADERC_DIR = path.getabsolute("..")
 BGFX_DIR = path.getabsolute(path.join(BRTSHADERC_DIR, "../bgfx"))
 
@@ -302,7 +385,9 @@ project "brtshaderc"
 
     configuration {}
 
-    if filesexist(BGFX_DIR, path.join(BGFX_DIR, "../bgfx-ext"), {
+		
+		printf("%s", path.join(BGFX_DIR, "../bgfx-ext"))
+    if filesexist(BGFX_DIR, path.join(BGFX_DIR, "../bgfx-ext"), {	--include bgfx/sripts/bgfx.lua
         path.join(BGFX_DIR, "scripts/shaderc.lua"), }) then
 
         if filesexist(BGFX_DIR, path.join(BGFX_DIR, "../bgfx-ext"), {
@@ -323,6 +408,6 @@ project "brtshaderc"
 
     configuration {}
 
-    strip()
+    strip() --include bx/scripts/toolchain.lua
 
 
